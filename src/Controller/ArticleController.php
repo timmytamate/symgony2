@@ -2,6 +2,9 @@
 
 namespace App\Controller;
 
+use App\Service\MarkdownHelper;
+use App\Service\SlackClient;
+use Nexy\Slack\Client;
 use Michelf\MarkdownInterface;
 use Psr\Log\LoggerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
@@ -10,6 +13,7 @@ use Symfony\Component\Cache\Adapter\AdapterInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
+
 
 class ArticleController extends AbstractController
 {
@@ -21,11 +25,20 @@ class ArticleController extends AbstractController
         return $this->render('article/homepage.html.twig');
     }
 
+    public function __construct()
+    {
+    }
+
     /**
      * @Route("/news/{slug}", name="article_show")
      */
-    public function show($slug, MarkdownInterface $markdown, AdapterInterface $cache)
+    public function show($slug, MarkdownInterface $markdown, AdapterInterface $cache, MarkdownHelper $markdownHelper, SlackClient $slack)
     {
+
+        if ($slug == 'Timmy') {
+            $message = $slack->sendMessage('Timmy', 'This is an amazing message!');
+        }
+
         $comments = [
             'I ate a normal rock once. It did NOT taste like bacon!',
             'Woohoo! I\'m going on an all-asteroid diet!',
@@ -39,14 +52,14 @@ class ArticleController extends AbstractController
         **Spicy** jalapeno bacon ipsum dolor amet veniam shank in dolore. Ham hock nisi landjaeger cow, lorem proident beef ribs aute enim veniam ut cillum pork chuck picanha. Dolore reprehenderit labore minim pork belly spare ribs cupim short loin in. Elit exercitation eiusmod dolore cow turkey shank eu pork belly meatball non cupim.
         EOF;
 
-        $item = $cache->getItem('markdown_'.md5($articleContent));
-        if (!$item->isHit()) {
-            $item->set($markdown->transform($articleContent));
-            $cache->save($item);
-        }
-        $articleContent = $item->get();
+        //dump($cache);die;
 
-
+        $articleContent = $markdownHelper->parse(
+            $articleContent,
+            $cache,
+            $markdown,
+        );
+        //dump($markdown);die;
 
         return $this->render('article/show.html.twig', [
             'title' => ucwords(str_replace('-', ' ', $slug)),

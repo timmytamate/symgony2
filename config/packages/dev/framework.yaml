@@ -1,0 +1,6 @@
+#framework:
+#    cache:
+#      app: cache.adapter.filesystem
+
+parameters:
+  cache_adapter: cache.adapter.filesystem
